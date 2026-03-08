@@ -81,8 +81,214 @@ function SkillIcon({ skill, size }) {
   );
 }
 
+// ── ANIMATION MODAL ───────────────────────────────────────────────────────────
+function AnimationModal({ skill, onClose }) {
+  const videoRef = useRef(null);
+  const cat      = skill.category || skill.type || "";
+  const catColor = CAT_COLOR[cat] || "#374151";
+  const rarityLabel = RARITY_LABEL[skill.rarity] || "Common";
+  const rarityColor = RARITY_COLOR[rarityLabel] || "#374151";
+  const [videoErr, setVideoErr] = useState(false);
+  const [loaded, setLoaded]     = useState(false);
+
+  // Close on Escape
+  useEffect(() => {
+    const fn = e => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [onClose]);
+
+  // Prevent body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  const videoSrc = `/assets/skills/animations/${skill.swfName}.mp4`;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 2000,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(4, 6, 12, 0.88)",
+        backdropFilter: "blur(6px)",
+        WebkitBackdropFilter: "blur(6px)",
+        animation: "modalFadeIn 0.18s ease",
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: "relative",
+          display: "flex", flexDirection: "column", alignItems: "center",
+          gap: 18,
+          animation: "modalSlideUp 0.22s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+      >
+        {/* close button */}
+        <button
+          onClick={onClose}
+          style={{
+            all: "unset", cursor: "pointer",
+            position: "absolute", top: -14, right: -14, zIndex: 10,
+            width: 32, height: 32,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "#0d1119", border: `1px solid #2a3340`,
+            borderRadius: "50%", color: "#4b5563", fontSize: 18, lineHeight: 1,
+            transition: "color 0.12s, border-color 0.12s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color="#e5e7eb"; e.currentTarget.style.borderColor="#4b5563"; }}
+          onMouseLeave={e => { e.currentTarget.style.color="#4b5563"; e.currentTarget.style.borderColor="#2a3340"; }}
+        >×</button>
+
+        {/* video container */}
+        <div style={{
+          position: "relative",
+          width: 420, height: 420,
+          borderRadius: 16,
+          overflow: "hidden",
+          background: "#060810",
+          border: `1px solid ${catColor}33`,
+          boxShadow: `0 0 60px ${catColor}22, 0 0 0 1px ${catColor}18`,
+        }}>
+          {/* ambient glow behind video */}
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 0,
+            background: `radial-gradient(ellipse at 50% 50%, ${catColor}18 0%, transparent 70%)`,
+          }} />
+
+          {!videoErr ? (
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onCanPlay={() => setLoaded(true)}
+              onError={() => setVideoErr(true)}
+              style={{
+                position: "relative", zIndex: 1,
+                width: "100%", height: "100%",
+                objectFit: "contain",
+                opacity: loaded ? 1 : 0,
+                transition: "opacity 0.3s ease",
+              }}
+            />
+          ) : (
+            /* fallback: show icon if no video found */
+            <div style={{
+              position: "relative", zIndex: 1,
+              width: "100%", height: "100%",
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", gap: 12,
+            }}>
+              <div style={{ width: 120, height: 120 }}>
+                <SkillIcon skill={skill} size={120} />
+              </div>
+              <div style={{
+                fontSize: 11, fontFamily: "monospace",
+                color: "#2a3a50", letterSpacing: "0.1em",
+              }}>
+                NO ANIMATION FOUND
+              </div>
+            </div>
+          )}
+
+          {/* loading pulse */}
+          {!loaded && !videoErr && (
+            <div style={{
+              position: "absolute", inset: 0, zIndex: 2,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: "50%",
+                border: `2px solid ${catColor}44`,
+                borderTop: `2px solid ${catColor}`,
+                animation: "spin 0.7s linear infinite",
+              }} />
+            </div>
+          )}
+
+          {/* corner accents */}
+          {[
+            { top: 0, left: 0, borderTop: `2px solid ${catColor}66`, borderLeft: `2px solid ${catColor}66` },
+            { top: 0, right: 0, borderTop: `2px solid ${catColor}66`, borderRight: `2px solid ${catColor}66` },
+            { bottom: 0, left: 0, borderBottom: `2px solid ${catColor}66`, borderLeft: `2px solid ${catColor}66` },
+            { bottom: 0, right: 0, borderBottom: `2px solid ${catColor}66`, borderRight: `2px solid ${catColor}66` },
+          ].map((s, i) => (
+            <div key={i} style={{
+              position: "absolute", zIndex: 3,
+              width: 14, height: 14, ...s,
+            }} />
+          ))}
+        </div>
+
+        {/* skill info bar */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "10px 18px",
+          background: "#0d1119",
+          border: "1px solid #1a2030",
+          borderRadius: 10,
+          minWidth: 260,
+        }}>
+          {/* small icon */}
+          <div style={{ width: 36, height: 36, flexShrink: 0 }}>
+            <SkillIcon skill={skill} size={36} />
+          </div>
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 14, fontWeight: 700,
+              fontFamily: "'Cinzel', serif",
+              color: "#e5e7eb", letterSpacing: "0.03em",
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {skill.name || skill.swfName}
+            </div>
+            <div style={{
+              fontSize: 10, fontFamily: "monospace",
+              color: catColor + "66", letterSpacing: "0.1em", marginTop: 2,
+            }}>
+              {skill.swfName}
+            </div>
+          </div>
+
+          {/* rarity dot + label */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
+          }}>
+            <div style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: rarityColor,
+              boxShadow: RARITY_GLOW[rarityLabel],
+            }} />
+            <span style={{
+              fontSize: 10, fontFamily: "'Cinzel', serif",
+              color: rarityColor, letterSpacing: "0.08em",
+            }}>
+              {rarityLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* hint */}
+        <div style={{
+          fontSize: 10, color: "#1e2535",
+          fontFamily: "monospace", letterSpacing: "0.12em",
+        }}>
+          ESC or click outside to close
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CARD ──────────────────────────────────────────────────────────────────────
-function SkillCard({ skill, selected, onClick }) {
+function SkillCard({ skill, selected, onClick, onAnimationClick }) {
   const cat         = skill.category || skill.type || "";
   const catColor    = CAT_COLOR[cat] || "#374151";
   const catObj      = CATEGORIES.find(c => c.key === cat);
@@ -130,9 +336,34 @@ function SkillCard({ skill, selected, onClick }) {
         {catObj?.icon || ""}
       </div>
 
-      {/* icon */}
-      <div style={{ width:120, height:120, marginTop:6, flexShrink:0 }}>
+      {/* icon wrapper — click opens animation modal */}
+      <div
+        style={{ width:120, height:120, marginTop:6, flexShrink:0, position:"relative" }}
+        onClick={e => {
+          e.stopPropagation();
+          onAnimationClick();
+        }}
+        title="Ver animación"
+      >
         <SkillIcon skill={skill} size={120} />
+        {/* play overlay on hover */}
+        {hov && (
+          <div style={{
+            position:"absolute", inset:0,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            background:`${catColor}18`,
+            borderRadius:8,
+            animation:"fadeIn 0.12s ease",
+          }}>
+            <div style={{
+              width:32, height:32, borderRadius:"50%",
+              background:`${catColor}33`,
+              border:`1px solid ${catColor}66`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:13, color:catColor,
+            }}>▶</div>
+          </div>
+        )}
       </div>
 
       {/* name */}
@@ -200,7 +431,7 @@ function Stat({ label, value, color="#374151" }) {
 }
 
 // ── DETAIL PANEL ──────────────────────────────────────────────────────────────
-function DetailPanel({ skill, onClose, isMobile }) {
+function DetailPanel({ skill, onClose, isMobile, onPlayAnimation }) {
   const cat         = skill.category || skill.type || "";
   const catColor    = CAT_COLOR[cat] || "#374151";
   const catObj      = CATEGORIES.find(c => c.key === cat);
@@ -233,14 +464,21 @@ function DetailPanel({ skill, onClose, isMobile }) {
         onMouseLeave={e => { e.currentTarget.style.color="#4b5563"; e.currentTarget.style.borderColor="#1a2030"; }}
       >×</button>
 
-      {/* icon header */}
-      <div style={{
-        position:"relative", flexShrink:0,
-        display:"flex", alignItems:"center", justifyContent:"center",
-        padding:"44px 24px 28px",
-        background:`radial-gradient(ellipse at 50% 110%,${catColor}18 0%,#080b12 70%)`,
-        borderBottom:`1px solid ${catColor}22`,
-      }}>
+      {/* icon header — clickable to open animation */}
+      <div
+        onClick={onPlayAnimation}
+        style={{
+          position:"relative", flexShrink:0, cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          padding:"44px 24px 28px",
+          background:`radial-gradient(ellipse at 50% 110%,${catColor}18 0%,#080b12 70%)`,
+          borderBottom:`1px solid ${catColor}22`,
+          transition:"background 0.15s",
+        }}
+        title="Ver animación"
+        onMouseEnter={e => e.currentTarget.style.background=`radial-gradient(ellipse at 50% 110%,${catColor}28 0%,#080b12 70%)`}
+        onMouseLeave={e => e.currentTarget.style.background=`radial-gradient(ellipse at 50% 110%,${catColor}18 0%,#080b12 70%)`}
+      >
         <div style={{
           position:"absolute", width:140, height:140, borderRadius:"50%",
           background:`radial-gradient(circle,${catColor}20 0%,transparent 70%)`,
@@ -249,6 +487,15 @@ function DetailPanel({ skill, onClose, isMobile }) {
         <div style={{ width:130, height:130, position:"relative", zIndex:1 }}>
           <SkillIcon skill={skill} size={130} />
         </div>
+        {/* play button overlay */}
+        <div style={{
+          position:"absolute", bottom:14, right:14, zIndex:2,
+          width:28, height:28, borderRadius:"50%",
+          background:`${catColor}22`,
+          border:`1px solid ${catColor}55`,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize:11, color:catColor,
+        }}>▶</div>
       </div>
 
       {/* body */}
@@ -305,6 +552,27 @@ function DetailPanel({ skill, onClose, isMobile }) {
             </div>
           </>
         )}
+
+        {/* play animation button */}
+        <button
+          onClick={onPlayAnimation}
+          style={{
+            all:"unset", cursor:"pointer", marginTop:4,
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            padding:"10px 16px",
+            background:`${catColor}11`,
+            border:`1px solid ${catColor}33`,
+            borderRadius:8,
+            fontSize:12, fontFamily:"'Cinzel',serif",
+            letterSpacing:"0.08em", color:catColor,
+            transition:"all 0.15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background=`${catColor}22`; e.currentTarget.style.borderColor=`${catColor}66`; }}
+          onMouseLeave={e => { e.currentTarget.style.background=`${catColor}11`; e.currentTarget.style.borderColor=`${catColor}33`; }}
+        >
+          <span style={{ fontSize:14 }}>▶</span>
+          PLAY ANIMATION
+        </button>
       </div>
     </div>
   );
@@ -357,7 +625,6 @@ function FilterBar({ catFilter, setCatFilter, counts }) {
           );
         })}
       </div>
-      {/* bottom border full width */}
       <div style={{ height:1, background:"#1a2030", marginTop:-1 }} />
     </div>
   );
@@ -365,19 +632,20 @@ function FilterBar({ catFilter, setCatFilter, counts }) {
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 export default function SkillViewer() {
-  const [selected,  setSelected]  = useState(null);
-  const [search,    setSearch]    = useState("");
-  const [catFilter, setCatFilter] = useState("ALL");
-  const [visible,   setVisible]   = useState(BATCH);
+  const [selected,      setSelected]      = useState(null);
+  const [animSkill,     setAnimSkill]     = useState(null); // skill whose animation is playing
+  const [search,        setSearch]        = useState("");
+  const [catFilter,     setCatFilter]     = useState("ALL");
+  const [visible,       setVisible]       = useState(BATCH);
   const gridRef = useRef(null);
   const { w } = useWindowSize();
   const isMobile = w < 640;
 
   useEffect(() => {
-    if (isMobile && selected) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    if (isMobile && selected && !animSkill) document.body.style.overflow = "hidden";
+    else if (!animSkill) document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
-  }, [selected, isMobile]);
+  }, [selected, isMobile, animSkill]);
 
   useEffect(() => { setVisible(BATCH); }, [search, catFilter]);
 
@@ -415,8 +683,12 @@ export default function SkillViewer() {
         ::-webkit-scrollbar { width:3px; height:3px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:#1e2535; border-radius:2px; }
-        @keyframes slideIn { from{transform:translateX(16px);opacity:0} to{transform:translateX(0);opacity:1} }
-        @keyframes fadeUp  { from{transform:translateY(8px);opacity:0}  to{transform:translateY(0);opacity:1} }
+        @keyframes slideIn    { from{transform:translateX(16px);opacity:0}   to{transform:translateX(0);opacity:1} }
+        @keyframes fadeUp     { from{transform:translateY(8px);opacity:0}    to{transform:translateY(0);opacity:1} }
+        @keyframes fadeIn     { from{opacity:0} to{opacity:1} }
+        @keyframes modalFadeIn   { from{opacity:0} to{opacity:1} }
+        @keyframes modalSlideUp  { from{transform:translateY(16px) scale(0.97);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
+        @keyframes spin       { to{transform:rotate(360deg)} }
       `}</style>
 
       <div style={{
@@ -506,11 +778,14 @@ export default function SkillViewer() {
                   {items.map((s, i) => (
                     <div key={s.swfName}
                       style={{ animation: i < BATCH ? `fadeUp 0.2s ease ${Math.min(i*0.012,0.3)}s both` : "none" }}>
-                      <SkillCard skill={s} selected={selected}
+                      <SkillCard
+                        skill={s}
+                        selected={selected}
                         onClick={ev => {
                           ev.stopPropagation();
                           setSelected(prev => prev?.swfName === s.swfName ? null : s);
                         }}
+                        onAnimationClick={() => setAnimSkill(s)}
                       />
                     </div>
                   ))}
@@ -529,11 +804,24 @@ export default function SkillViewer() {
           </div>
 
           {selected && (
-            <DetailPanel key={selected.swfName} skill={selected}
-              onClose={() => setSelected(null)} isMobile={isMobile} />
+            <DetailPanel
+              key={selected.swfName}
+              skill={selected}
+              onClose={() => setSelected(null)}
+              isMobile={isMobile}
+              onPlayAnimation={() => setAnimSkill(selected)}
+            />
           )}
         </div>
       </div>
+
+      {/* ANIMATION MODAL — rendered outside main flow to avoid z-index issues */}
+      {animSkill && (
+        <AnimationModal
+          skill={animSkill}
+          onClose={() => setAnimSkill(null)}
+        />
+      )}
     </>
   );
 }
