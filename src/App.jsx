@@ -1,4 +1,4 @@
-// src/App.jsx
+ // src/App.jsx
 import { useState, useEffect } from "react";
 import EnemyViewer from "./modules/enemies/EnemyViewer";
 import SkillViewer from "./modules/skills/Skillviewer";
